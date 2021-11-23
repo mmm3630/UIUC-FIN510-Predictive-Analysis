@@ -1,0 +1,133 @@
+---
+title: "Lab 16 - Neural Nets (Solution)"
+author: NAME HERE
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: simplex
+    number_sections: false
+---
+
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+knitr::knit_meta(clean=T)
+```
+
+## 0 load the packages 
+```{r}
+#library() to load neuralnet, caret, and gains
+library(neuralnet)
+library(ggplot2)
+library(lattice)
+library(caret)
+library(gains)
+
+```
+
+## 1 create a data frame
+```{r}
+# load the data 
+df <- read.csv("EastWestAirlinesNN.csv")
+
+# first six rows 
+head(df)
+
+# column names
+names(df)
+```
+
+## 2 create two outcome dummies to represent output nodes  
+```{r}
+# create a variable named purchase
+
+# create a variable named not_purchase
+
+```
+
+## 3 remove unnecessary variables
+```{r}
+# remove ï..ID column and update df 
+
+# column names 
+
+```
+
+## 4 remove rows with missing values
+```{r}
+
+
+```
+
+## 5 data partition 
+```{r}
+# set the seed 
+
+# row indexes of the training set
+
+# training set
+
+# test set
+
+```
+
+## 6 normalize predictors to a scale of [0, 1] 
+```{r}
+# estimate the transformation 
+
+# normalize the numerical predictors in the training set 
+
+# normalize the numerical predictors in the test set 
+
+```
+
+## 7 fit a neural network on the training set 
+```{r}
+# set the random seed 
+
+# fit a neural network that has a single hidden layer with 5 nodes 
+
+# plot the network
+
+# display weights
+
+```
+
+## 8 generate predicted probabilities for records in the test set  
+```{r}
+# make predictions using compute() 
+
+# predicted probabilities of making purchases
+
+```
+
+## 9 generate predicted classes for records in the test set 
+```{r}
+
+
+```
+
+## 10 create a confusion matrix for records in the test set
+```{r}
+
+
+```
+
+## 11 create a gain table 
+```{r}
+# gain table 
+
+# cumulative percentage of customers who make purchases 
+
+# cumulative number of customers 
+
+```
+
+## 12 plot a lift chart
+```{r}
+# plot the cumulative number of customers who make purchases against the cumulative number of customers
+
+# add a baseline curve 
+
+```
