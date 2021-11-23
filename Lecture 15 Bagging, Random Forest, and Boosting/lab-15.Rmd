@@ -1,0 +1,177 @@
+---
+title: "Lab 15 - Bagging, Random Forests, and Boosting"
+author: May Tsai
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: simplex
+    number_sections: false
+---
+
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+```{r}
+knitr::knit_meta(clean=T)
+```
+
+## 0 load the packages 
+```{r}
+# library(adabag) to load adabag, randomForest, caret, and gains
+library(caret)
+library(gains)
+library(adabag)
+library(randomForest)
+```
+
+## 1 create a data frame
+```{r}
+# load the data and set stringsAsFactors to TRUE
+ebay.df <- read.csv("eBayAuctions.csv",stringsAsFactors = TRUE)
+# first six rows 
+head(ebay.df)
+# column names
+names(ebay.df)
+```
+
+## 2 convert numeric variables to categorical variables
+```{r}
+# convert Duration to a categorical variable
+ebay.df$Duration <- as.factor(ebay.df$Duration)
+# convert Competitive. to a categorical variable
+ebay.df$Competitive <- as.factor(ebay.df$Competitive) 
+# return the structure 
+str(ebay.df$Competitive)
+str(ebay.df$Duration)
+```
+
+## 3 data partition
+```{r}
+# set the seed 
+set.seed(1)
+# row numbers of the training set
+0.6*dim(ebay.df)[1]
+
+# training set 
+train.index <- sample(c(1:dim(ebay.df)[1]), dim(ebay.df)[1]*0.6)  
+train.df <- ebay.df[train.index, ]
+head(train.df)
+
+# test set 
+test.df <- ebay.df[-train.index, ]
+head(test.df)
+
+```
+
+## 4 bagging 
+
+### 4.1 fit a bagging algorithm 
+```{r}
+set.seed(1) 
+bag<-bagging(Competitive~., data=train.df)
+```
+
+### 4.2 make predictions for records in the test set  
+```{r}
+# predictions from a fitted bagging object 
+bag.pred <- predict(bag, test.df)
+
+# predicted probabilities 
+bag.pred$prob
+
+# predicted classes
+bag.pred$class
+```
+
+### 4.3 create a confusion matrix 
+```{r}
+confusionMatrix(as.factor(bag.pred$class),test.df$Competitive, positive="1")
+
+```
+
+## 5 random forests 
+
+### 5.1 fit a random forests algorithm 
+```{r}
+set.seed(1)
+rf <- randomForest(Competitive~ ., data = train.df, mtry = 4, nodesize = 5)  
+
+```
+
+### 5.2 variable importance plot
+```{r}
+varImpPlot(rf)
+
+```
+
+### 5.3 make predictions for records in the test set
+```{r}
+# predicted probabilities 
+rf.pred.prob <- predict(rf, test.df, type="prob")
+head(rf.pred.prob)
+
+# predicted classes
+rf.pred.class <- predict(rf, test.df, type="class")
+head(rf.pred.class)
+```
+
+### 5.4 create a confusion matrix 
+```{r}
+head(test.df$Competitive)
+confusionMatrix(rf.pred.class, test.df$Competitive, positive = "1")
+```
+
+### 5.5 create a gain table  
+```{r}
+# gain table 
+library(gains)
+gain <- gains(test.df$Phone_sale, nn.pred.prob, groups = 10)
+
+# cumulative percentage of competitive auctions 
+gain$cume.pct.of.total 
+
+# cumulative number of auctions 
+gain$cume.obs
+```
+
+### 5.6 plot a lift chart 
+```{r}
+# plot the cumulative number of competitive auctions against the cumulative number of auctions
+plot(c(0,gain$cume.pct.of.total*sum(test.df$Competitive==1))~c(0,gain$cume.obs), 
+     xlab="cumulative numbers of auctions", ylab="cumulative number of competitive auctions", type="l")
+
+
+# add a baseline curve 
+lines(c(0,sum(test.df$Competitive==1))~c(0, dim(test.df)[1]))
+
+```
+
+## 6 AdaBoost 
+
+### 6.1 fit an adaptive boosting algorithm 
+```{r}
+set.seed(1)
+boost <- boosting(Competitive ~ ., data = train.df)
+
+```
+
+### 6.2 make predictions for records in the test set  
+```{r}
+# predictions from a fitted bagging object 
+boost.pred <- predict(boost, test.df)
+# predicted probabilities 
+head(boost.pred$prob)
+
+# predicted classes 
+head(boost.pred$class)
+
+```
+
+### 6.3 create a confusion matrix 
+```{r}
+confusionMatrix(as.factor(boost.pred$class), test.df$Competitive, positive = "1")
+
+```
