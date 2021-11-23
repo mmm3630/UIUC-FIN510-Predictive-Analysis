@@ -1,0 +1,142 @@
+---
+title: "Lab 14 - Regression Trees"
+author: May Tsai
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    theme: simplex
+    number_sections: false
+---
+
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+## 0 load the packages 
+```{r}
+library(rpart)
+library(rpart.plot)
+```
+
+## 1 create a data frame
+```{r}
+# load the data 
+housing.df <- read.csv('BostonHousing.csv')
+
+# remove the variable CAT..MEDV
+housing.df = subset(housing.df, select= -CAT..MEDV )
+
+# first six rows 
+head(housing.df)
+
+# column names
+names(housing.df)
+
+```
+
+## 2 data partition
+```{r}
+# set the seed 
+set.seed(1)
+
+# row numbers of the training set
+train.index <- sample(c(1:dim(housing.df)[1]), dim(housing.df)[1]*0.6)  
+head(train.index)
+
+# training set
+train.df <- housing.df[train.index,]
+head(train.df)
+
+# test set 
+test.df <- housing.df[-train.index,]
+head(test.df)
+```
+
+## 3 fit a shallow regression tree
+```{r}
+# regression tree with cp = 0.5
+rt.shallow <- rpart(MEDV ~  CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + 
+              RAD + TAX + PTRATIO + LSTAT, data = train.df, method = "anova", cp = 0.5)
+
+# plot the tree
+prp(rt.shallow, type = 1, extra = 1)
+
+
+# predicted prices for records in the test set 
+rt.shallow.pred.price <- predict(rt.shallow, test.df, type="vector")
+
+
+# first six values 
+head(rt.shallow.pred.price)
+
+
+# MSE in the test set 
+mean((rt.shallow.pred.price)^2)
+
+
+```
+
+## 4 fit a deeper regression tree  
+```{r}
+# regression tree with cp = 0.01
+rt.deep <- rpart(MEDV ~  CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + 
+              RAD + TAX + PTRATIO + LSTAT, data = test.df, method = "anova", cp = 0.01)
+
+# plot the tree
+prp(rt.deep, type = 1, extra = 1)
+
+# predicted prices for records in the test set 
+rt.deep.pred.price <- predict(rt.deep, test.df, type="vector")
+
+# first six values 
+head(rt.deep.pred.price)
+
+# MSE in the test set 
+mean((rt.deep.pred.price)^2)
+
+```
+
+## 5 prune the regression tree 
+```{r}
+# set the seed 
+set.seed(1)
+
+# fit a regression tree with cp = 0.0001 and xval = 5
+cv.rt <- rpart(MEDV ~.,  CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + 
+              RAD + TAX + PTRATIO + LSTAT, data = test.df, method = "anova", cp = 0.0001, xval=5)
+
+# display the cp table
+cv.rt$cptable
+
+# xerror values 
+cv.rt$cptable[,"xerror"]
+
+# index of the row with the minimum xerror
+which.min(cv.rt$cptable[,"xerror"])
+
+# CP value of the row with the minimum xerror 
+cv.rt$cptable[which.min(cv.rt$cptable[,"xerror"]),"CP"]
+
+```
+
+## 6 identify the best-pruned regression tree   
+```{r}
+# prune the tree
+rt.pruned <- prune(cv.rt, cp= cv.rt$cptable[which.min(cv.rt$cptable[,"xerror"]),"CP"])
+
+# plot the tree
+prp(rt.pruned, type = 1, extra = 1)
+
+# predicted prices for records in the test set 
+rt.pruned.pred <- predict(rt.pruned, test.df, type = "vector")
+  
+# first six values 
+head(rt.pruned.pred)
+
+# MSE in the test set 
+mean((rt.pruned.pred)^2)
+
+```
+
